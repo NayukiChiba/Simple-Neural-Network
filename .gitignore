@@ -208,11 +208,6 @@ __marimo__/
 
 # 计划部分
 plans/
-# 测试
-tests/
-# 数据集
-datasets/
-data/
 # 输出
 outputs/
 # 日志
