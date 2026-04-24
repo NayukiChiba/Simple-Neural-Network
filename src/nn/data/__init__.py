@@ -7,4 +7,6 @@
 3. 为训练流程提供统一数据入口
 """
 
-__all__: list[str] = []
+from .dataGenerator import DataGenerator
+
+__all__: list[str] = ["DataGenerator"]
