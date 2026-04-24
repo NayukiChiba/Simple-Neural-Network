@@ -57,6 +57,14 @@ class DataGenerator:
         验证训练集、测试集、验证集的划分比例
         """
         total = self.train_ratio + self.valid_ratio + self.test_ratio
+
+        if not 0.0 <= self.train_ratio <= 1.0:
+            raise ValueError("训练集划分比例必须在 0.0 和 1.0 之间")
+        if not 0.0 <= self.valid_ratio <= 1.0:
+            raise ValueError("验证集划分比例必须在 0.0 和 1.0 之间")
+        if not 0.0 <= self.test_ratio <= 1.0:
+            raise ValueError("测试集划分比例必须在 0.0 和 1.0 之间")
+
         if not math.isclose(total, 1.0):
             raise ValueError(
                 f"训练集、测试集、验证集的划分比例之和必须为 1.0, 当前为 {total}"
@@ -109,6 +117,9 @@ class DataGenerator:
 
 
         """
+        # 验证输入数据的样本数量是否一致
+        self.validateSplitRatios()
+
         # 样本的数量为
         sampleCount = x.shape[0]
         # 生成一个随机的索引数组
@@ -144,8 +155,6 @@ class DataGenerator:
 
 
         """
-        # 创建目录
-        self.createDatasetDir()
 
         x = np.array(
             [
@@ -156,8 +165,8 @@ class DataGenerator:
             ],
             dtype=np.float64,
         )
-
-        y = np.array([0, 1, 1, 0], dtype=np.float64)
+        # pr #4: 使用整数标签, 0表示同类, 1表示异类
+        y = np.array([0, 1, 1, 0], dtype=np.int64)
 
         self.saveDataset(config.XOR_FILE, x, y)
 
@@ -167,7 +176,6 @@ class DataGenerator:
 
 
         """
-        self.createDatasetDir()
 
         # 每个类别的样本数量
         classCount = self.SPIRAL_CLASS_COUNT
@@ -176,7 +184,8 @@ class DataGenerator:
 
         # 生成一个 totalCount x 2 的特征矩阵和一个 totalCount 的标签向量
         x = np.zeros((totalCount, 2), dtype=np.float64)
-        y = np.zeros(totalCount, dtype=np.float64)
+        # pr #4: 使用整数标签, 从0到classCount-1
+        y = np.zeros(totalCount, dtype=np.int64)
 
         # 为每个类别生成螺旋数据
         for classIndex in range(classCount):
@@ -214,7 +223,6 @@ class DataGenerator:
         """
         生成正弦回归数据集
         """
-        self.createDatasetDir()
 
         x = np.linspace(
             self.SINE_X_START,
