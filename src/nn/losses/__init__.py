@@ -7,4 +7,6 @@
 3. 为反向传播提供损失梯度入口
 """
 
-__all__: list[str] = []
+from src.nn.losses.crossEntropyLoss import CrossEntropyLoss
+
+__all__: list[str] = ["CrossEntropyLoss"]
