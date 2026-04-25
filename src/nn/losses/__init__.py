@@ -8,5 +8,6 @@
 """
 
 from src.nn.losses.crossEntropyLoss import CrossEntropyLoss
+from src.nn.losses.mseLoss import MSELoss
 
-__all__: list[str] = ["CrossEntropyLoss"]
+__all__: list[str] = ["CrossEntropyLoss", "MSELoss"]
