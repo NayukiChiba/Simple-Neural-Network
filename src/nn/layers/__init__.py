@@ -7,7 +7,14 @@
 3. 管理前向与反向传播需要的层级能力
 """
 
+from .activationLayer import ReLULayer, SigmoidLayer, TanhLayer
 from .baseLayer import BaseLayer
 from .linearLayer import LinearLayer
 
-__all__: list[str] = ["BaseLayer", "LinearLayer"]
+__all__: list[str] = [
+    "BaseLayer",
+    "LinearLayer",
+    "ReLULayer",
+    "SigmoidLayer",
+    "TanhLayer",
+]
