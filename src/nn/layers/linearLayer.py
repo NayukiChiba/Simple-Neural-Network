@@ -123,6 +123,12 @@ class LinearLayer(BaseLayer):
         if outputGradient.ndim != 2:
             raise ValueError("LinearLayer 的输出梯度必须是二维数组")
 
+        # pr #8: 输出梯度的 batchSize 必须与输入数据的 batchSize 匹配
+        if outputGradient.shape[0] != self.inputCache.shape[0]:
+            raise ValueError(
+                f"输出梯度的 batchSize 不匹配, 期望 {self.inputCache.shape[0]}, 实际为 {outputGradient.shape[0]}"
+            )
+
         if outputGradient.shape[1] != self.outputDim:
             raise ValueError(
                 f"输出梯度的维度不匹配, 期望 {self.outputDim}, 实际为 {outputGradient.shape[1]}"
