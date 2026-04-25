@@ -8,5 +8,6 @@
 """
 
 from .dataGenerator import DataGenerator
+from .dataLoader import DataLoader, DatasetLoader
 
-__all__: list[str] = ["DataGenerator"]
+__all__: list[str] = ["DataGenerator", "DataLoader", "DatasetLoader"]
