@@ -43,7 +43,7 @@ class SequentialModel(BaseLayer):
 
     def add_layer(self, layer: BaseLayer) -> None:
         """
-        向模型末尾加一个wangluoceng
+        向模型末尾加一个网络层
         Args:
             layer(BaseLayer): 要添加的层实例
 
