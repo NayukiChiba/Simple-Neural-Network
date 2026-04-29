@@ -7,4 +7,6 @@
 3. 负责根据梯度更新模型参数
 """
 
-__all__: list[str] = []
+from src.nn.optimizers.sgdOptimizer import SGDOptimizer
+
+__all__: list[str] = ["SGDOptimizer"]
