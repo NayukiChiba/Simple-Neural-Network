@@ -7,6 +7,7 @@
 3. 组织日志记录与训练调度
 """
 
+from src.nn.training.metrics import calculateAccuracy, calculateMeanSquaredError
 from src.nn.training.trainer import Trainer
 
-__all__: list[str] = ["Trainer"]
+__all__: list[str] = ["Trainer", "calculateAccuracy", "calculateMeanSquaredError"]
