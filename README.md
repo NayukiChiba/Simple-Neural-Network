@@ -8,7 +8,7 @@
 
 ## 项目状态
 
-当前第一版已经完成，已具备完整的基础训练链路：
+已经完成，已具备完整的基础训练链路：
 
 - 支持生成并加载示例数据集
 - 支持手写网络层、激活函数、损失函数与优化器
@@ -125,7 +125,7 @@ Simple-Neural-Network/
 
 ```bash
 pip install -r requirements.txt
-pip install pytest ruff
+pre-commit install
 ```
 
 如果你使用虚拟环境，先激活再安装依赖即可。
