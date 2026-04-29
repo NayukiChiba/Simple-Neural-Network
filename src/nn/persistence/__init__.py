@@ -7,4 +7,6 @@
 3. 支持训练结果的复现与恢复
 """
 
-__all__: list[str] = []
+from src.nn.persistence.checkpointIO import CheckpointIO
+
+__all__: list[str] = ["CheckpointIO"]
