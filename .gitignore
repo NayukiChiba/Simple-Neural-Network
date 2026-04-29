@@ -154,6 +154,14 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# VitePress / docs build output
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# Node
+docs/node_modules/
+npm-debug.log*
+
 # mypy
 .mypy_cache/
 .dmypy.json
