@@ -14,6 +14,7 @@ from src.nn.losses.crossEntropyLoss import CrossEntropyLoss
 from src.nn.losses.mseLoss import MSELoss
 from src.nn.models.sequentialModel import SequentialModel
 from src.nn.optimizers.sgdOptimizer import SGDOptimizer
+from src.nn.training.metrics import calculateAccuracy, calculateMeanSquaredError
 
 
 class Trainer:
@@ -190,13 +191,9 @@ class Trainer:
             float: 评估指标值
         """
         if self.taskType == "classification":
-            # 对于分类任务, 计算准确率
-            predictedLabels = np.argmax(predictions, axis=1)
-            accuracy = np.mean(predictedLabels == targetData)
-            return float(accuracy)
+            return calculateAccuracy(predictions, targetData)
         elif self.taskType == "regression":
-            mse = np.mean((predictions - targetData) ** 2)
-            return float(mse)
+            return calculateMeanSquaredError(predictions, targetData)
         else:
             raise ValueError(f"不支持的任务类型: {self.taskType}")
 
