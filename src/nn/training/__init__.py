@@ -7,4 +7,6 @@
 3. 组织日志记录与训练调度
 """
 
-__all__: list[str] = []
+from src.nn.training.trainer import Trainer
+
+__all__: list[str] = ["Trainer"]
