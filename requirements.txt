@@ -1,1 +1,4 @@
 numpy>=2.4.4
+ruff
+pytest
+pre-commit
