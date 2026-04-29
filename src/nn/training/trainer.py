@@ -6,7 +6,6 @@
 3. 提供训练、评估和预测接口
 """
 
-from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
@@ -17,7 +16,6 @@ from src.nn.models.sequentialModel import SequentialModel
 from src.nn.optimizers.sgdOptimizer import SGDOptimizer
 
 
-@dataclass
 class Trainer:
     """
     模型训练器
@@ -149,38 +147,45 @@ class Trainer:
         # 更新模型参数
         self.optimizer.step(self.model.layers)
 
-        return loss
+        return float(loss)
 
     def trainEpoch(self, inputData: np.ndarray, targetData: np.ndarray) -> float:
         """
         执行一个训练 epoch
+
         Args:
             inputData (np.ndarray): 输入数据，形状为 (numSamples, numFeatures)
             targetData (np.ndarray): 目标数据，形状为 (numSamples, numClasses) 或 (numSamples, 1)
+
         Returns:
             float: 当前 epoch 的平均损失值
         """
         batches = self.createBatches(inputData, targetData)
-        batchLosses: list[float] = []
 
-        # 累加所有批次的损失值和样本数量
+        # 记录所有批次损失的加权和。
+        # 注意：trainStep 返回的是“当前 batch 的平均损失”，
+        # 不是这个 batch 的总损失。
+        # 因此这里需要乘以当前 batch 的样本数，
+        # 先还原为该 batch 对应的总损失，再在整个 epoch 结束后
+        # 除以总样本数，得到整个训练集上的平均损失。
         totalLoss = 0.0
+
         for inputBatch, targetBatch in batches:
-            # trainStep 返回的是当前批次的平均损失值, 需要乘以当前批次的样本数量才能得到总损失, 因为 trainStep 内部计算损失时是对当前批次的平均损失进行计算的
             batchLoss = self.trainStep(inputBatch, targetBatch)
-            # 将当前批次的平均损失值添加到 batchLosses 列表中, 以供后续分析使用
-            batchLosses.append(batchLoss)
-            # 乘以当前批次的样本数量, 因为 batchLoss 是当前批次的平均损失, 需要乘以样本数量才能得到总损失
+
+            # 将 batch 平均损失转换为 batch 总损失
             totalLoss += batchLoss * inputBatch.shape[0]
-        averageLoss = totalLoss / inputData.shape[0]  # 除以总样本数量得到平均损失
+
+        # 用整个训练集的样本总数求平均，得到当前 epoch 的平均损失
+        averageLoss = totalLoss / inputData.shape[0]
         return averageLoss
 
     def computeMetric(self, predictions: np.ndarray, targetData: np.ndarray) -> float:
         """
         计算评估指标
         Args:
-            predictions (np.ndarray): 模型预测的输出，形状为 (batchSize, numClasses) 或 (batchSize, 1)
-            targetData (np.ndarray): 目标批数据，形状为 (batchSize, numClasses) 或 (batchSize, 1)
+            predictions (np.ndarray): 模型预测的输出，形状为 (batchSize,)
+            targetData (np.ndarray): 目标批数据，形状为 (batchSize,)
         Returns:
             float: 评估指标值
         """
@@ -222,7 +227,6 @@ class Trainer:
             # 先前向传播得到预测结果, 以便计算损失和评估指标
             predictions = self.model.forward(inputData)
             loss = self.lossFunction.forward(predictions, targetData)
-            metricValue = self.computeMetric(predictions, targetData)
 
         finally:
             if wasTraining:
@@ -236,9 +240,11 @@ class Trainer:
         }
 
         if self.taskType == "classification":
+            metricValue = self.computeMetric(predictions, targetData)
             result["accuracy"] = float(metricValue)
         else:
-            result["mse"] = float(metricValue)
+            metricValue = float(loss)
+            result["mse"] = metricValue
 
         return result
 
@@ -271,10 +277,12 @@ class Trainer:
         # 验证训练数据集的合法性
         self.validateDataset(trainInputs, trainTargets)
 
-        hasValidation = validInputs is not None and validTargets is not None
+        # pr #22: 验证验证数据集的合法性, 但只有当 validInputs 和 validTargets 都不为 None 时才进行验证, 因为如果其中一个为 None, 另一个也必须为 None, 否则就是非法输入
+        if (validInputs is None) != (validTargets is None):
+            raise ValueError("validInputs 和 validTargets 必须同时提供")
+
+        hasValidation = validInputs is not None
         if hasValidation:
-            if validInputs is None or validTargets is None:
-                raise ValueError("validInputs 和 validTargets 必须同时提供")
             self.validateDataset(validInputs, validTargets)
 
         history: dict[str, list[float]] = {
@@ -297,12 +305,12 @@ class Trainer:
 
         # 训练循环
         for epochIndex in range(epochCount):
-            # 执行一个训练 epoch, 并记录训练损失和评估指标
-            self.trainEpoch(trainInputs, trainTargets)
+            # 执行一个训练 epoch，并复用其返回的平均训练损失
+            trainLoss = self.trainEpoch(trainInputs, trainTargets)
 
-            # 评估训练集上的损失和评估指标
+            # 训练指标仍通过 evaluate 统一计算，避免在 fit 中重复实现逻辑
             trainResult = self.evaluate(trainInputs, trainTargets)
-            history["train_loss"].append(trainResult["loss"])
+            history["train_loss"].append(trainLoss)
 
             if self.taskType == "classification":
                 history["train_accuracy"].append(trainResult["accuracy"])
@@ -319,43 +327,43 @@ class Trainer:
                 else:
                     history["valid_mse"].append(validResult["mse"])
 
-                if verbose:
-                    epochNumber = epochIndex + 1
-                    if self.taskType == "classification":
-                        message = (
-                            f"epoch {epochNumber}/{epochCount} - "
-                            f"train_loss: {trainResult['loss']:.6f} - "
-                            f"train_accuracy: {trainResult['accuracy']:.6f}"
+            # pr #22: 只有当 verbose 为 True 时才打印训练和验证结果, 因为有时候我们可能只想获取历史记录而不需要打印结果, 这样可以避免不必要的输出, 提高效率
+            if verbose:
+                epochNumber = epochIndex + 1
+                if self.taskType == "classification":
+                    message = (
+                        f"epoch {epochNumber}/{epochCount} - "
+                        f"train_loss: {trainLoss:.6f} - "
+                        f"train_accuracy: {trainResult['accuracy']:.6f}"
+                    )
+
+                    if (
+                        hasValidation
+                        and validInputs is not None
+                        and validTargets is not None
+                    ):
+                        message += (
+                            f" - valid_loss: {validResult['loss']:.6f}"
+                            f" - valid_accuracy: {validResult['accuracy']:.6f}"
                         )
 
-                        if (
-                            hasValidation
-                            and validInputs is not None
-                            and validTargets is not None
-                            and verbose
-                        ):
-                            message += (
-                                f" - valid_loss: {validResult['loss']:.6f}"
-                                f" - valid_accuracy: {validResult['accuracy']:.6f}"
-                            )
-
-                    else:
-                        message = (
-                            f"epoch {epochNumber}/{epochCount} - "
-                            f"train_loss: {trainResult['loss']:.6f} - "
-                            f"train_mse: {trainResult['mse']:.6f}"
+                else:
+                    message = (
+                        f"epoch {epochNumber}/{epochCount} - "
+                        f"train_loss: {trainLoss:.6f} - "
+                        f"train_mse: {trainResult['mse']:.6f}"
+                    )
+                    if (
+                        hasValidation
+                        and validInputs is not None
+                        and validTargets is not None
+                    ):
+                        message += (
+                            f" - valid_loss: {validResult['loss']:.6f}"
+                            f" - valid_mse: {validResult['mse']:.6f}"
                         )
-                        if (
-                            hasValidation
-                            and validInputs is not None
-                            and validTargets is not None
-                        ):
-                            message += (
-                                f" - valid_loss: {validResult['loss']:.6f}"
-                                f" - valid_mse: {validResult['mse']:.6f}"
-                            )
 
-                    print(message)
+                print(message)
         return history
 
     def predict(self, inputData: np.ndarray) -> np.ndarray:
